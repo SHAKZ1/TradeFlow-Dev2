@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id // Clerk ID
+  email     String   @unique
+  phone     String?  @unique
+  firstName String?
+  lastName  String?
+  imageUrl  String?
+  
+  ghlLocationId String? @unique
+  ghlConfig     Json?   
+
+  documentConfig      Json?
+  communicationConfig Json?
+  costRates           Json?
+
+  stripeSecretKey      String?
+  stripePublishableKey String?
+
+  bankAccountName   String?
+  bankSortCode      String?
+  bankAccountNumber String?
+
+  companyLogoUrl   String? 
+  companyBannerUrl String?
+  companyName      String?
+  companyNiche     String?  // <--- ADD THIS (e.g. "Emergency Plumber", "High-End Landscaper")
+  companyAddress   String?
+  companyWebsite   String?
+  companyEmail     String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobExpenses JobExpense[]
+  aiAdvisorReports AiAdvisorReport[] // <--- ADD THIS LINE
+}
+
+model Quote {
+  id              String   @id @default(cuid())
+  opportunityId   String
+  contactId       String
+  amount          Float
+  type            String
+  method          String
+  status          String
+  stripeSessionId String?  @unique
+  paymentUrl      String?
+  receiptUrl      String?
+  pdfUrl          String?
+  paidAt          DateTime? 
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // --- PERFORMANCE INDEX ---
+  @@index([opportunityId])
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  opportunityId   String
+  contactId       String
+  amount          Float
+  method          String
+  status          String
+  stripeSessionId String?  @unique
+  paymentUrl      String?
+  receiptUrl      String?
+  pdfUrl          String?
+  paidAt          DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // --- PERFORMANCE INDEX ---
+  @@index([opportunityId])
+}
+
+model JobExpense {
+  id            String   @id @default(cuid())
+  userId        String
+  opportunityId String   
+  
+  label         String   
+  amount        Float    
+  category      String   
+  date          DateTime @default(now())
+  
+  subcontractorName  String?
+  subcontractorPhone String?
+  subcontractorEmail String?
+  contractUrl        String? 
+  status             String? 
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // --- PERFORMANCE INDEX ---
+  @@index([userId])
+  @@index([opportunityId])
+}
+
+model AiAdvisorReport {
+  id        String   @id @default(cuid())
+  userId    String
+  
+  // The Input Data Snapshot (So we know what data produced this advice)
+  inputSnapshot Json 
+
+  // The AI Output (Structured)
+  executiveSummary String
+  financialAnalysis String
+  operationalAdvice String
+  marketIntel       String
+  actionPlan        Json     // Array of { title, stepByStep, priority }
+
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
