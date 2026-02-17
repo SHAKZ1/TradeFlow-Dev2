@@ -89,7 +89,26 @@ export async function POST(request: Request) {
     if (!oppRes.ok) throw new Error("Opportunity Creation Failed: " + await oppRes.text());
     
     const oppData = await oppRes.json();
-    return NextResponse.json({ success: true, newId: oppData.opportunity.id, contactId: contactId });
+
+    const newOppId = oppData.opportunity.id; // Get the ID from GHL response
+
+    // ============================================================
+    // NEW: SAVE BOOKINGS
+    // ============================================================
+    if (lead.bookings && Array.isArray(lead.bookings) && lead.bookings.length > 0) {
+        await db.booking.createMany({
+            data: lead.bookings.map((b: any) => ({
+                opportunityId: newOppId,
+                userId: userId,
+                startDate: new Date(b.startDate),
+                endDate: new Date(b.endDate),
+                title: b.title || 'Initial Booking'
+            }))
+        });
+    }
+    // ============================================================
+    
+    return NextResponse.json({ success: true, newId: newOppId, contactId: contactId });
 
   } catch (error: any) {
     console.error("Create Error:", error);

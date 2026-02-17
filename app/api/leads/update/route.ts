@@ -117,6 +117,31 @@ export async function PUT(request: Request) {
         throw new Error(oppText);
     }
 
+    // ============================================================
+    // NEW: SYNC BOOKINGS TO PRISMA
+    // ============================================================
+    if (lead.bookings && Array.isArray(lead.bookings)) {
+        // 1. Delete existing bookings for this lead (Simple Sync Strategy)
+        // This handles updates and deletions automatically
+        await db.booking.deleteMany({
+            where: { opportunityId: lead.id }
+        });
+
+        // 2. Create new bookings
+        if (lead.bookings.length > 0) {
+            await db.booking.createMany({
+                data: lead.bookings.map((b: any) => ({
+                    opportunityId: lead.id,
+                    userId: userId,
+                    startDate: new Date(b.startDate),
+                    endDate: new Date(b.endDate),
+                    title: b.title || 'Job Session'
+                }))
+            });
+        }
+    }
+    // ============================================================
+
     // 5. SAVE NOTES
     if (lead.notes) {
         const noteBody = `FIELD_NOTES:${lead.notes}`;

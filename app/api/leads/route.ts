@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db'; 
 import { getAccessToken } from '@/lib/ghl';
 import { generateUserConfig } from '@/lib/ghl-config-engine';
 import { refreshUserConfig } from '@/lib/ghl/field-manager';
@@ -78,16 +78,21 @@ export async function GET() {
         return s === 'open' || s === 'won' || s === 'lost';
     });
 
-    // 2. OPTIMIZED DB FETCH (Select only needed fields to save Bandwidth)
+   // 2. OPTIMIZED DB FETCH
     const opportunityIds = filteredOpportunities.map((o: any) => o.id);
-    const [allQuotes, allInvoices] = await Promise.all([
+    const [allQuotes, allInvoices, allBookings] = await Promise.all([ // <--- ADD allBookings
         db.quote.findMany({ 
             where: { opportunityId: { in: opportunityIds } },
-            select: { id: true, opportunityId: true, amount: true, method: true, status: true, createdAt: true, type: true } // <--- BANDWIDTH SAVER
+            select: { id: true, opportunityId: true, amount: true, method: true, status: true, createdAt: true, type: true }
         }),
         db.invoice.findMany({ 
             where: { opportunityId: { in: opportunityIds } },
-            select: { id: true, opportunityId: true, amount: true, method: true, status: true, createdAt: true } // <--- BANDWIDTH SAVER
+            select: { id: true, opportunityId: true, amount: true, method: true, status: true, createdAt: true }
+        }),
+        // FETCH BOOKINGS
+        db.booking.findMany({
+            where: { opportunityId: { in: opportunityIds } },
+            orderBy: { startDate: 'asc' }
         })
     ]);
 
@@ -168,6 +173,7 @@ export async function GET() {
       // C. Match History
       const leadQuotes = allQuotes.filter(q => q.opportunityId === opp.id);
       const leadInvoices = allInvoices.filter(i => i.opportunityId === opp.id);
+      const leadBookings = allBookings.filter(b => b.opportunityId === opp.id); // <--- MATCH BOOKINGS
 
       const safePhone = contact.phone || opp.contact?.phone || 'No Phone';
       const safeEmail = contact.email || opp.contact?.email || 'No Email';
@@ -178,6 +184,14 @@ export async function GET() {
 
       const invoiceHistory = leadInvoices.map(i => ({
           id: i.id, amount: i.amount, method: i.method, status: i.status, date: i.createdAt.toISOString(), target: i.method === 'sms' ? safePhone : safeEmail
+      }));
+
+      // MAP BOOKINGS
+      const bookings = leadBookings.map(b => ({
+          id: b.id,
+          startDate: b.startDate.toISOString(),
+          endDate: b.endDate.toISOString(),
+          title: b.title || 'Scheduled Job'
       }));
 
       // D. Mapping
@@ -245,6 +259,7 @@ export async function GET() {
         jobDate: getField('jobStart') || null,
         jobEndDate: getField('jobEnd') || null,
         reviewChannel: getField('reviewChannel'),
+        bookings: bookings,
         source: rawSource,
         autoTexted: contact.tags?.includes(CONFIG.tags?.recaptured || 'recaptured-lead') || false,
         createdAt: opp.createdAt,

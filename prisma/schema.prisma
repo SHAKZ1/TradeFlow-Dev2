@@ -7,6 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Booking {
+  id            String   @id @default(cuid())
+  opportunityId String   // Links to GHL Lead ID
+  userId        String   // Links to Clerk User (Tenancy)
+  
+  startDate     DateTime
+  endDate       DateTime
+  title         String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@index([userId])
+}
+
 model User {
   id        String   @id // Clerk ID
   email     String   @unique
@@ -42,6 +60,7 @@ model User {
 
   jobExpenses JobExpense[]
   aiAdvisorReports AiAdvisorReport[] // <--- ADD THIS LINE
+  bookings    Booking[] // <--- ADD THIS LINE
 }
 
 model Quote {

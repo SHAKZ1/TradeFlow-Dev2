@@ -26,6 +26,13 @@ export interface InvoiceRecord {
   date: string;
 }
 
+export interface Booking {
+  id: string;
+  startDate: string;
+  endDate: string;
+  title?: string; // e.g. "Day 1", "Installation"
+}
+
 export type LeadSource =
   | "Whatsapp"
   | "Checkatrade"
@@ -51,6 +58,7 @@ export interface Lead {
   service: string;
 
   source: LeadSource;
+  bookings?: Booking[]; 
 
   depositStatus: "paid" | "unpaid";
   invoiceStatus: "paid" | "unpaid";

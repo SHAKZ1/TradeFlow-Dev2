@@ -7,7 +7,7 @@ import {
   User, ArrowRight, Pencil, Check, MapPin, Briefcase, Layout, ChevronDown, 
   Trash2, Send, AlertCircle, ShieldCheck, Award, Facebook, Megaphone, 
   PhoneIncoming, CreditCard, Receipt, FileText, MessageCircle,
-  PieChart, CheckCircle2, Plus, Calculator, History, Layers, Ban, Wallet, Tag
+  PieChart, CheckCircle2, Plus, Calculator, History, Layers, Ban, Wallet, Tag, Settings
 } from 'lucide-react';
 import { Lead, LeadSource, InvoiceRecord, QuoteRecord, LeadStatus, STAGE_CONFIG } from './data';
 import { AlertModal } from './AlertModal';
@@ -19,6 +19,8 @@ import { JobSpecsModal } from './components/JobSpecsModal';
 import { JobCostingModal } from './components/JobCostingModal';
 import { CostRate } from './settings/components/CostRateManager';
 import { DynamicJobForm } from './components/DynamicJobForm';
+import { BookingManager } from './components/BookingManager';
+import Link from 'next/link'; // Add this
 
 // --- STYLING CONSTANTS ---
 const overlayClass = "fixed inset-0 bg-gray-900/40 backdrop-blur-md z-[9000] flex items-center justify-center p-4 sm:p-6";
@@ -552,42 +554,42 @@ export function Modal({ lead, isOpen, onClose, onSave, onDelete, onLost, hasTest
                   <div className="p-4 flex-1 flex flex-col gap-1">
                       <button 
                           onClick={() => setActiveTab('client')}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
+                          className={`flex cursor-pointer items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
                               ${activeTab === 'client' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                       >
                           <User className="w-4 h-4" /> Client Info
                       </button>
                       <button 
                           onClick={() => setActiveTab('financials')}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
+                          className={`flex cursor-pointer items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
                               ${activeTab === 'financials' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                       >
                           <CreditCard className="w-4 h-4" /> Financials
                       </button>
                       <button 
                           onClick={() => setActiveTab('booking')}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
+                          className={`flex cursor-pointer items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
                               ${activeTab === 'booking' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                       >
                           <Calendar className="w-4 h-4" /> Booking Info
                       </button>
                       <button 
                           onClick={() => setActiveTab('details')}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
+                          className={`flex cursor-pointer items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
                               ${activeTab === 'details' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                       >
                           <Layers className="w-4 h-4" /> Job Details
                       </button>
                       <button 
                           onClick={() => setActiveTab('profit')}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
+                          className={`flex cursor-pointer items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
                               ${activeTab === 'profit' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                       >
                           <Calculator className="w-4 h-4" /> Profit Calculator
                       </button>
                       <button 
                           onClick={() => setActiveTab('history')}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
+                          className={`flex cursor-pointer items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
                               ${activeTab === 'history' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                       >
                           <History className="w-4 h-4" /> History
@@ -954,51 +956,63 @@ export function Modal({ lead, isOpen, onClose, onSave, onDelete, onLost, hasTest
                       )}
 
                       {/* TAB: BOOKING INFO */}
-                      {activeTab === 'booking' && (
-                          <div className="max-w-3xl mx-auto">
-                              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                                  <div className="flex justify-between items-center mb-4">
-                                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Schedule</h4>
-                                      <div className="flex gap-3">
-                                          <button onClick={handleClearBooking} className="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none outline-none flex items-center gap-1">
-                                              <Ban className="w-3 h-3" /> Clear
-                                          </button>
-                                          <button onClick={() => setIsJobTicketOpen(true)} className="text-[10px] font-bold text-orange-600 hover:text-orange-700 transition-colors cursor-pointer bg-transparent border-none outline-none flex items-center gap-1">
-                                              View Ticket <ArrowRight className="w-3 h-3" />
-                                          </button>
-                                      </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-4 mb-4">
-                                      <DateInput label="Start" value={formatForInput(formData.jobDate)} onChange={(val) => handleDateChange('start', val)} min={minDateTime} />
-                                      <DateInput label="End" value={formatForInput(formData.jobEndDate)} onChange={(val) => handleDateChange('end', val)} min={minDateTime} />
-                                  </div>
-                                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                      <span className="text-xs font-medium text-gray-500">Duration</span>
-                                      <div className="flex items-center gap-2">
-                                          <input 
-                                              type="number" 
-                                              value={duration} 
-                                              onChange={(e) => handleDurationChange(e.target.value)} 
-                                              className="w-12 text-right font-bold text-gray-900 bg-transparent border-none outline-none"
-                                          />
-                                          <span className="text-xs text-gray-400">hrs</span>
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                      )}
+{activeTab === 'booking' && (
+    <div className="max-w-3xl mx-auto">
+        <BookingManager 
+            bookings={formData.bookings || []}
+            onChange={(newBookings) => {
+                // Update local state
+                const updatedLead = { ...formData, bookings: newBookings };
+                
+                // OPTIONAL: Sync legacy fields for GHL compatibility
+                // We take the earliest start date and latest end date from the list
+                if (newBookings.length > 0) {
+                    const sorted = [...newBookings].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+                    updatedLead.jobDate = sorted[0].startDate;
+                    
+                    // Find the very last end date
+                    const sortedEnd = [...newBookings].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+                    updatedLead.jobEndDate = sortedEnd[0].endDate;
+                } else {
+                    updatedLead.jobDate = undefined;
+                    updatedLead.jobEndDate = undefined;
+                }
+
+                setFormData(updatedLead);
+            }}
+        />
+    </div>
+)}
 
                       {/* TAB: JOB DETAILS */}
                       {activeTab === 'details' && (
                           <div className="max-w-3xl mx-auto">
-                              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm min-h-[400px]">
                                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Custom Job Details</h4>
                                   
-                                  <DynamicJobForm 
-                                      config={documentConfig}
-                                      values={formData.jobSpecs || {}}
-                                      onChange={handleJobSpecsChange}
-                                  />
+                                  {documentConfig.length === 0 ? (
+                                      <div className="flex flex-col items-center justify-center h-[300px] text-center">
+                                          <div className="w-16 h-16 bg-[#F5F5F7] rounded-full flex items-center justify-center mb-4">
+                                              <Settings className="w-7 h-7 text-gray-400" />
+                                          </div>
+                                          <h3 className="text-sm font-semibold text-[#1D1D1F]">No Fields Configured</h3>
+                                          <p className="text-xs text-[#86868B] mt-2 max-w-[280px] leading-relaxed">
+                                              Tailor your job sheets by adding custom data points in your workspace settings.
+                                          </p>
+                                          <Link 
+                                              href="/dashboard/settings" 
+                                              className="mt-6 px-6 py-2.5 bg-[#007AFF] hover:bg-[#0062cc] text-white text-xs font-bold rounded-full transition-all shadow-sm hover:shadow-md no-underline"
+                                          >
+                                              Configure Settings
+                                          </Link>
+                                      </div>
+                                  ) : (
+                                      <DynamicJobForm 
+                                          config={documentConfig}
+                                          values={formData.jobSpecs || {}}
+                                          onChange={handleJobSpecsChange}
+                                      />
+                                  )}
                               </div>
                           </div>
                       )}
@@ -1016,35 +1030,101 @@ export function Modal({ lead, isOpen, onClose, onSave, onDelete, onLost, hasTest
                       {/* TAB: HISTORY */}
                       {activeTab === 'history' && (
                           <div className="max-w-3xl mx-auto space-y-6">
-                              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Activity Log</h4>
+                              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm min-h-[500px]">
+                                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-8">Unified Activity Log</h4>
                                   
-                                  <div className="space-y-8 relative pl-4 border-l border-gray-100 ml-2">
-                                      
-                                      {/* CREATED EVENT */}
-                                      <div className="relative">
-                                          <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-200 border-2 border-white" />
-                                          <p className="text-sm font-bold text-gray-900">Lead Created</p>
-                                          <p className="text-xs text-gray-400 mt-0.5">{new Date(formData.createdAt).toLocaleString()}</p>
-                                      </div>
+                                  <div className="relative pl-8 border-l border-gray-100 space-y-8">
+                                      {(() => {
+                                          // 1. AGGREGATE ALL EVENTS
+                                          const events = [
+                                              // Creation
+                                              {
+                                                  id: 'create',
+                                                  date: new Date(formData.createdAt),
+                                                  type: 'Creation',
+                                                  title: 'Lead Created',
+                                                  desc: `Source: ${formData.source}`,
+                                                  icon: User,
+                                                  color: 'bg-gray-100 text-gray-600'
+                                              },
+                                              // Quotes
+                                              ...(formData.quoteHistory || []).map(q => ({
+                                                  id: q.id,
+                                                  date: new Date(q.date),
+                                                  type: 'Quote',
+                                                  title: `${q.type} Quote ${q.status === 'paid' ? 'Paid' : 'Sent'}`,
+                                                  desc: `Value: £${q.amount.toLocaleString()} • Via: ${q.method === 'manual' ? 'Manual Entry' : q.method.toUpperCase()}`,
+                                                  icon: FileText,
+                                                  color: q.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+                                              })),
+                                              // Invoices
+                                              ...(formData.invoiceHistory || []).map(i => ({
+                                                  id: i.id,
+                                                  date: new Date(i.date),
+                                                  type: 'Invoice',
+                                                  title: `Invoice ${i.status === 'paid' ? 'Paid' : 'Sent'}`,
+                                                  desc: `Value: £${i.amount.toLocaleString()} • Via: ${i.method === 'manual' ? 'Manual Entry' : i.method.toUpperCase()}`,
+                                                  icon: Receipt,
+                                                  color: i.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'
+                                              })),
+                                              // Bookings
+                                              ...(formData.bookings || []).map(b => ({
+                                                  id: b.id,
+                                                  date: new Date(b.startDate), // Use start date as the "Event" time
+                                                  type: 'Booking',
+                                                  title: 'Job Scheduled',
+                                                  desc: `${new Date(b.startDate).toLocaleDateString()} • ${new Date(b.startDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${new Date(b.endDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`,
+                                                  icon: Calendar,
+                                                  color: 'bg-purple-100 text-purple-600'
+                                              }))
+                                          ];
 
-                                      {/* QUOTES */}
-                                      {formData.quoteHistory?.map((q, i) => (
-                                          <div key={`q-${i}`} className="relative">
-                                              <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-white ${q.status === 'paid' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
-                                              <p className="text-sm font-bold text-gray-900">{q.type} Quote {q.status === 'paid' ? 'Paid' : 'Sent'}</p>
-                                              <p className="text-xs text-gray-400 mt-0.5">{new Date(q.date).toLocaleString()} • £{q.amount}</p>
-                                          </div>
-                                      ))}
+                                          // Reviews (If scheduled/sent)
+                                          if (formData.reviewScheduledDate) {
+                                              events.push({
+                                                  id: 'review',
+                                                  date: new Date(formData.reviewScheduledDate),
+                                                  type: 'Review',
+                                                  title: `Review Request ${formData.reviewStatus === 'sent' ? 'Sent' : 'Scheduled'}`,
+                                                  desc: `Channel: ${formData.reviewChannel?.toUpperCase() || 'SMS'}`,
+                                                  icon: Star,
+                                                  color: 'bg-yellow-100 text-yellow-600'
+                                              });
+                                          }
 
-                                      {/* INVOICES */}
-                                      {formData.invoiceHistory?.map((inv, i) => (
-                                          <div key={`inv-${i}`} className="relative">
-                                              <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-white ${inv.status === 'paid' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-                                              <p className="text-sm font-bold text-gray-900">Invoice {inv.status === 'paid' ? 'Paid' : 'Sent'}</p>
-                                              <p className="text-xs text-gray-400 mt-0.5">{new Date(inv.date).toLocaleString()} • £{inv.amount}</p>
-                                          </div>
-                                      ))}
+                                          // 2. SORT & RENDER
+                                          return events
+                                              .sort((a, b) => b.date.getTime() - a.date.getTime())
+                                              .map((event, i) => (
+                                                  <div key={event.id + i} className="relative group">
+                                                      {/* Timeline Dot */}
+                                                      <div className={`absolute -left-[41px] top-0 w-5 h-5 rounded-full border-4 border-white shadow-sm flex items-center justify-center z-10 ${event.color}`}>
+                                                          <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                                      </div>
+
+                                                      {/* Content Card */}
+                                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                          <div>
+                                                              <h5 className="text-sm font-bold text-gray-900">{event.title}</h5>
+                                                              <p className="text-xs text-gray-500 font-medium mt-0.5">{event.desc}</p>
+                                                          </div>
+                                                          <div className="text-right">
+                                                              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                                                                  {event.date.toLocaleDateString('en-GB', { 
+                                                                      weekday: 'short', 
+                                                                      day: 'numeric', 
+                                                                      month: 'short', 
+                                                                      year: 'numeric' 
+                                                                  })}
+                                                              </span>
+                                                              <p className="text-[10px] text-gray-300 font-mono">
+                                                                  {event.date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                                              </p>
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                              ));
+                                      })()}
                                   </div>
                               </div>
                           </div>
