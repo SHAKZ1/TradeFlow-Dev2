@@ -36,7 +36,7 @@ export async function POST() {
 
     const { object } = await generateObject({
       // @ts-ignore - Grounding is supported at runtime, types are lagging
-      model: google('gemini-2.5-flash', {
+      model: google('gemini-3.1-pro-preview', {
           useSearchGrounding: true 
       }),
       

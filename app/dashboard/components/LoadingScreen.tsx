@@ -93,7 +93,7 @@ export function LoadingScreen({ logo }: { logo?: string | null }) {
                         />
                         
                         {/* LAYER D: The "Liquid Light" Reflection (Shimmer) */}
-                        <motion.div
+                        {/* <motion.div
                             initial={{ x: '-150%', skewX: -20 }}
                             animate={{ x: '150%', skewX: -20 }}
                             transition={{ 
@@ -107,7 +107,7 @@ export function LoadingScreen({ logo }: { logo?: string | null }) {
                                 background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.0) 40%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.0) 60%, transparent 100%)',
                                 mixBlendMode: 'overlay',
                             }}
-                        />
+                        /> */}
                     </motion.div>
                 </motion.div>
 
