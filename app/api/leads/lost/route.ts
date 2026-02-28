@@ -42,6 +42,14 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: responseText }, { status: response.status });
     }
 
+    // ==========================================
+    // NEW: UPDATE PRISMA VAULT
+    // ==========================================
+    await db.lead.update({
+        where: { id },
+        data: { status: 'lost' }
+    });
+
     return NextResponse.json({ success: true });
 
   } catch (error: any) {

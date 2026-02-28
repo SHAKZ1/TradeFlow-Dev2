@@ -31,6 +31,13 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: err }, { status: 500 });
     }
 
+    // ==========================================
+    // NEW: DELETE FROM PRISMA VAULT
+    // ==========================================
+    await db.lead.delete({
+        where: { id }
+    });
+
     return NextResponse.json({ success: true });
 
   } catch (error: any) {

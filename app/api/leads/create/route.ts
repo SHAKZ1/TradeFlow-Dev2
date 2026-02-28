@@ -103,12 +103,38 @@ export async function POST(request: Request) {
       }),
     });
 
+    // ... (Keep all existing GHL fetch logic above this)
+    
     if (!oppRes.ok) throw new Error("Opportunity Creation Failed: " + await oppRes.text());
     
     const oppData = await oppRes.json();
     const newOppId = oppData.opportunity.id;
 
-    // 3. SAVE BOOKINGS TO PRISMA
+    // ==========================================
+    // NEW: SAVE TO PRISMA VAULT
+    // ==========================================
+    await db.lead.create({
+        data: {
+            id: newOppId,
+            userId: userId,
+            contactId: contactId,
+            firstName: fName,
+            lastName: lName,
+            email: lead.email || '',
+            phone: lead.phone || '',
+            value: Number(lead.value) || 0,
+            status: lead.status || 'new-lead',
+            postcode: lead.postcode || '',
+            service: lead.service || '',
+            source: lead.source || 'Manual',
+            depositStatus: 'unpaid',
+            invoiceStatus: 'unpaid',
+            reviewStatus: 'none',
+            jobDate: lead.jobDate ? new Date(lead.jobDate) : null,
+            jobEndDate: lead.jobEndDate ? new Date(lead.jobEndDate) : null,
+        }
+    });
+
     if (lead.bookings && Array.isArray(lead.bookings) && lead.bookings.length > 0) {
         await db.booking.createMany({
             data: lead.bookings.map((b: any) => ({

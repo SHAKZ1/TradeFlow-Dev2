@@ -117,17 +117,34 @@ export async function PUT(request: Request) {
         throw new Error(oppText);
     }
 
-    // ============================================================
-    // NEW: SYNC BOOKINGS TO PRISMA
-    // ============================================================
-    if (lead.bookings && Array.isArray(lead.bookings)) {
-        // 1. Delete existing bookings for this lead (Simple Sync Strategy)
-        // This handles updates and deletions automatically
-        await db.booking.deleteMany({
-            where: { opportunityId: lead.id }
-        });
+    // ==========================================
+    // NEW: UPDATE PRISMA VAULT
+    // ==========================================
+    await db.lead.update({
+        where: { id: lead.id },
+        data: {
+            firstName: lead.firstName,
+            lastName: lead.lastName,
+            email: lead.email,
+            phone: lead.phone,
+            value: Number(lead.value) || 0,
+            status: lead.status,
+            postcode: lead.postcode,
+            service: lead.service,
+            depositStatus: lead.depositStatus,
+            invoiceStatus: lead.invoiceStatus,
+            reviewStatus: lead.reviewStatus,
+            reviewChannel: lead.reviewChannel,
+            reviewScheduledDate: lead.reviewScheduledDate ? new Date(lead.reviewScheduledDate) : null,
+            jobDate: lead.jobDate ? new Date(lead.jobDate) : null,
+            jobEndDate: lead.jobEndDate ? new Date(lead.jobEndDate) : null,
+            notes: lead.notes,
+            jobSpecs: lead.jobSpecs || {}
+        }
+    });
 
-        // 2. Create new bookings
+    if (lead.bookings && Array.isArray(lead.bookings)) {
+        await db.booking.deleteMany({ where: { opportunityId: lead.id } });
         if (lead.bookings.length > 0) {
             await db.booking.createMany({
                 data: lead.bookings.map((b: any) => ({
@@ -139,27 +156,6 @@ export async function PUT(request: Request) {
                 }))
             });
         }
-    }
-    // ============================================================
-
-    // 5. SAVE NOTES
-    if (lead.notes) {
-        const noteBody = `FIELD_NOTES:${lead.notes}`;
-        await fetch(`https://services.leadconnectorhq.com/contacts/${lead.contactId}/notes`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, Version: '2021-07-28', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ body: noteBody }),
-        });
-    }
-
-    // 6. SAVE JOB SPECS
-    if (lead.jobSpecs && Object.keys(lead.jobSpecs).length > 0) {
-        const specBody = `JOB_SPECS:${JSON.stringify(lead.jobSpecs)}`;
-        await fetch(`https://services.leadconnectorhq.com/contacts/${lead.contactId}/notes`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, Version: '2021-07-28', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ body: specBody }),
-        });
     }
 
     return NextResponse.json({ success: true });

@@ -37,6 +37,14 @@ export async function PUT(request: Request) {
 
     if (!response.ok) throw new Error(await response.text());
 
+    // ==========================================
+    // NEW: UPDATE PRISMA VAULT
+    // ==========================================
+    await db.lead.update({
+        where: { id: leadId },
+        data: { status: newStatus }
+    });
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Status Update Error:", error);
