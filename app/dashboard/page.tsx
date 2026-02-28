@@ -11,8 +11,9 @@ import {
   MouseSensor,
   closestCorners
 } from '@dnd-kit/core';
+import { useToast } from './components/ToastSystem'; // <--- IMPORTED TOAST HOOK
 import { Search, ArrowUpDown, Plus, RefreshCw, AlertCircle, Filter } from 'lucide-react';
-import { COLUMNS, Lead, LeadStatus, QuoteRecord } from './data';
+import { COLUMNS, Lead, LeadStatus, QuoteRecord, STAGE_CONFIG } from './data'; // <--- IMPORTED STAGE_CONFIG
 import { Column } from './Column';
 import { Card } from './Card';
 import { Modal } from './Modal';
@@ -25,7 +26,9 @@ import { QuoteConfirmModal } from './components/QuoteConfirmModal';
 import { BookingConfirmModal } from './components/BookingConfirmModal';
 
 export default function DashboardPage() {
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const { addToast } = useToast(); // <--- INITIALIZED TOAST HOOK
+
+  const[leads, setLeads] = useState<Lead[]>([]);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -33,9 +36,9 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [pendingMove, setPendingMove] = useState<{ leadId: string, newStatus: LeadStatus } | null>(null);
-  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const[pendingMove, setPendingMove] = useState<{ leadId: string, newStatus: LeadStatus } | null>(null);
+  const[isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const[isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   
   const [alertConfig, setAlertConfig] = useState<{ isOpen: boolean, title: string, message: string } | null>(null);
 
@@ -44,19 +47,17 @@ export default function DashboardPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   const [isQuoteConfirmOpen, setIsQuoteConfirmOpen] = useState(false);
-  const [isBookingConfirmOpen, setIsBookingConfirmOpen] = useState(false);
+  const[isBookingConfirmOpen, setIsBookingConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 1. ADD THIS REF
   const isDraggingRef = useRef(false); 
 
-  const [licenses, setLicenses] = useState({
+  const[licenses, setLicenses] = useState({
     testimonials: true, 
     missedCall: true,
     adsRoi: false
   });
-
-  
 
   const fetchLeads = async (silent = false) => {
     if (isDraggingRef.current) return; // STOP POLLING IF DRAGGING
@@ -92,7 +93,7 @@ export default function DashboardPage() {
         if (!document.hidden) fetchLeads(true);
     }, 60000); 
     return () => clearInterval(interval);
-  }, []);
+  },[]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -110,6 +111,7 @@ export default function DashboardPage() {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    isDraggingRef.current = false; // RESUME UPDATES
     const { active, over } = event;
     setActiveLead(null);
     if (!over) return;
@@ -184,13 +186,28 @@ export default function DashboardPage() {
   };
 
   const updateLeadStatus = async (leadId: string, newStatus: LeadStatus, extraData?: Partial<Lead>) => {
+    const lead = leads.find(l => l.id === leadId);
+    
     setLeads((prev) => prev.map((lead) => lead.id === leadId ? { ...lead, status: newStatus, ...extraData } : lead));
+    
+    // --- FIRE THE APPLE TOAST ---
+    if (lead) {
+        addToast({
+            title: 'Pipeline Updated',
+            message: `${lead.firstName} moved to ${STAGE_CONFIG[newStatus]?.label || newStatus}`,
+            type: 'success'
+        });
+    }
+
     try {
         await fetch('/api/leads/status', {
             method: 'PUT',
             body: JSON.stringify({ leadId, newStatus })
         });
-    } catch (error) { console.error("Status Update Failed", error); }
+    } catch (error) { 
+        console.error("Status Update Failed", error); 
+        addToast({ title: 'Sync Error', message: 'Failed to update CRM.', type: 'error' });
+    }
   };
 
   const handleSaveLead = async (updatedLead: Lead, closeModal: boolean = true) => {
@@ -200,13 +217,22 @@ export default function DashboardPage() {
             return; 
         }
     }
+    
     setLeads((prev) => {
         const exists = prev.find(l => l.id === updatedLead.id);
         if (exists) return prev.map((l) => l.id === updatedLead.id ? updatedLead : l);
-        return [...prev, updatedLead];
+        return[...prev, updatedLead];
     });
+    
     if (closeModal) setSelectedLead(null);
     else setSelectedLead(updatedLead);
+
+    // --- FIRE THE APPLE TOAST ---
+    addToast({
+        title: 'Changes Saved',
+        message: `Updated details for ${updatedLead.firstName}`,
+        type: 'success'
+    });
 
     try {
         if (updatedLead.id.length > 15) { 
@@ -222,15 +248,26 @@ export default function DashboardPage() {
         }
     } catch (error) {
         console.error("Save Error:", error);
-        setAlertConfig({ isOpen: true, title: "Sync Error", message: "Could not save to CRM." });
+        addToast({ title: 'Sync Error', message: 'Could not save to CRM.', type: 'error' });
     }
   };
 
   const handleDeleteLead = async (leadId: string) => {
     const leadToDelete = leads.find(l => l.id === leadId);
     const contactId = leadToDelete?.contactId;
+    
     setLeads((prev) => prev.filter(l => l.id !== leadId));
     setSelectedLead(null);
+    
+    // --- FIRE THE APPLE TOAST ---
+    if (leadToDelete) {
+        addToast({
+            title: 'Lead Deleted',
+            message: `${leadToDelete.firstName} has been removed.`,
+            type: 'info'
+        });
+    }
+
     try {
         if (leadId.length > 15) {
             await fetch('/api/leads/delete', {
@@ -239,12 +276,27 @@ export default function DashboardPage() {
                 body: JSON.stringify({ id: leadId, contactId: contactId })
             });
         }
-    } catch (error) { console.error("Failed to delete lead", error); }
+    } catch (error) { 
+        console.error("Failed to delete lead", error); 
+        addToast({ title: 'Sync Error', message: 'Failed to delete from CRM.', type: 'error' });
+    }
   };
 
   const handleLostLead = async (leadId: string) => {
+    const leadToLose = leads.find(l => l.id === leadId);
+    
     setLeads((prev) => prev.filter(l => l.id !== leadId));
     setSelectedLead(null);
+    
+    // --- FIRE THE APPLE TOAST ---
+    if (leadToLose) {
+        addToast({
+            title: 'Lead Marked Lost',
+            message: `${leadToLose.firstName} has been moved to Lost.`,
+            type: 'info'
+        });
+    }
+
     try {
         if (leadId.length > 15) {
             await fetch('/api/leads/lost', {
@@ -253,7 +305,10 @@ export default function DashboardPage() {
                 body: JSON.stringify({ id: leadId })
             });
         }
-    } catch (error) { console.error("Failed to mark lead lost", error); }
+    } catch (error) { 
+        console.error("Failed to mark lead lost", error); 
+        addToast({ title: 'Sync Error', message: 'Failed to update CRM.', type: 'error' });
+    }
   };
 
   const handleAddLead = () => {

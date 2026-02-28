@@ -7,13 +7,16 @@ import { BankModal } from './components/BankModal';
 import { CreditCard, Link as LinkIcon, Mail, Facebook, Instagram, MapPin, RefreshCw, Landmark } from 'lucide-react';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { useRouter } from 'next/navigation';
+import { ConciergeModal } from './components/ConciergeModal'; // <--- ADD THIS
 
 export default function IntegrationsPage() {
   const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isStripeOpen, setIsStripeOpen] = useState(false);
   const [isBankOpen, setIsBankOpen] = useState(false);
+  const [conciergePlatform, setConciergePlatform] = useState<'Meta' | 'Google' | null>(null); // <--- ADD THIS
   const router = useRouter();
+  
 
   const fetchStatus = async () => {
       const res = await fetch('/api/integrations/status');
@@ -111,8 +114,8 @@ export default function IntegrationsPage() {
             icon={<Facebook className="w-6 h-6" />}
             color="bg-[#1877F2]" // Facebook Blue
             status={status.ghl.facebook || status.ghl.instagram ? 'connected' : 'disconnected'}
-            actionLabel="Connect via GHL"
-            onAction={() => window.open('https://app.gohighlevel.com/settings/integrations', '_blank')}
+            actionLabel={status.ghl.facebook || status.ghl.instagram ? "Manage" : "Concierge Setup"}
+            onAction={() => setConciergePlatform('Meta')} // <--- CHANGE THIS
         />
 
         {/* 6. GOOGLE BUSINESS */}
@@ -122,8 +125,8 @@ export default function IntegrationsPage() {
             icon={<MapPin className="w-6 h-6" />}
             color="bg-[#4285F4]" // Google Blue
             status={status.ghl.google ? 'connected' : 'disconnected'}
-            actionLabel="Connect via GHL"
-            onAction={() => window.open('https://app.gohighlevel.com/settings/integrations', '_blank')}
+            actionLabel={status.ghl.google ? "Manage" : "Concierge Setup"}
+            onAction={() => setConciergePlatform('Google')} // <--- CHANGE THIS
         />
 
       </div>
@@ -140,6 +143,13 @@ export default function IntegrationsPage() {
         onClose={() => setIsBankOpen(false)} 
         onSave={fetchStatus}
         initialData={status?.bank}
+      />
+
+      {/* ADD THIS NEW MODAL */}
+      <ConciergeModal 
+        isOpen={!!conciergePlatform}
+        platform={conciergePlatform}
+        onClose={() => setConciergePlatform(null)}
       />
 
     </div>

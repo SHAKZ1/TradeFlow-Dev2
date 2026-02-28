@@ -5,6 +5,7 @@ import { Search, Filter, RefreshCw, Mail, Phone, MessageCircle, Facebook, Instag
 import { CHANNEL_FILTERS, Channel, Conversation } from './types';
 import { ChatWindow } from './ChatWindow';
 import { LoadingScreen } from '../components/LoadingScreen';
+import { AnimatePresence } from 'framer-motion';
 
 const getChannelIcon = (channel: Channel) => {
     const classes = "w-3 h-3";
@@ -26,6 +27,7 @@ export default function InboxPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const fetchConversations = async () => {
+    setIsLoading(true); // Force loading state on manual refresh
     try {
       const res = await fetch('/api/inbox/conversations');
       if (!res.ok) throw new Error("API Route Not Found");
@@ -42,7 +44,7 @@ export default function InboxPage() {
     fetchConversations();
     const interval = setInterval(fetchConversations, 15000);
     return () => clearInterval(interval);
-  }, []);
+  },[]);
 
   const filteredConversations = conversations.filter(c => {
       if (activeFilter === 'All') return true;
@@ -50,8 +52,13 @@ export default function InboxPage() {
   });
 
   return (
-    <div className="h-[calc(100vh-100px)] -m-4 md:-m-8 flex bg-[#F5F5F7] overflow-hidden">
+    <div className="h-[calc(100vh-100px)] -m-4 md:-m-8 flex bg-[#F5F5F7] overflow-hidden relative">
       
+      {/* RULE 4: GLOBAL LOADING SCREEN ON REFRESH */}
+      <AnimatePresence>
+          {isLoading && <LoadingScreen />}
+      </AnimatePresence>
+
       {/* LEFT PANE: LIST (Finder Style) */}
       <div className="w-[360px] flex flex-col border-r border-gray-200/60 bg-[#F5F5F7] shrink-0">
         
@@ -93,9 +100,7 @@ export default function InboxPage() {
 
         {/* LIST */}
         <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-2 space-y-1">
-            {isLoading ? (
-                <div className="p-8 text-center text-xs text-gray-400">Loading...</div>
-            ) : filteredConversations.length === 0 ? (
+            {!isLoading && filteredConversations.length === 0 ? (
                 <div className="p-8 text-center text-xs text-gray-400">No messages found.</div>
             ) : (
                 filteredConversations.map((conv) => (

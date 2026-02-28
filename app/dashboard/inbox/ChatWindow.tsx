@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   Send, Paperclip, Phone, Mail, MoreHorizontal, Check, CheckCircle2, 
-  MessageCircle, Facebook, Instagram, MapPin, ChevronDown, ChevronUp, X, Loader2, FileText
+  MessageCircle, Facebook, Instagram, MapPin, X, Loader2, FileText
 } from 'lucide-react';
 import { Conversation, Message, Channel } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +13,7 @@ interface ChatWindowProps {
 }
 
 const getChannelIcon = (channel: Channel) => {
-    const c = "w-3.5 h-3.5";
+    const c = "w-4 h-4"; // Standardized size for perfect centering
     switch (channel) {
         case 'SMS': return <Phone className={c} />;
         case 'Email': return <Mail className={c} />;
@@ -25,25 +25,14 @@ const getChannelIcon = (channel: Channel) => {
     }
 };
 
-const getChannelColor = (channel: Channel) => {
-    switch (channel) {
-        case 'WhatsApp': return 'text-[#25D366]';
-        case 'Facebook': return 'text-[#1877F2]';
-        case 'Instagram': return 'text-[#E1306C]';
-        case 'Google': return 'text-blue-500';
-        case 'Email': return 'text-indigo-500';
-        default: return 'text-gray-500';
-    }
-};
-
 export function ChatWindow({ conversation }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const[input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const[isMenuOpen, setIsMenuOpen] = useState(false);
   
   const [attachments, setAttachments] = useState<{ url: string, name: string, type: string }[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const[isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -51,7 +40,7 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
 
   // --- DATA OPTIONS ---
   const dataOptions = (() => {
-      const opts: Channel[] = [];
+      const opts: Channel[] =[];
       if (conversation.contactPhone) { opts.push('SMS'); opts.push('WhatsApp'); }
       if (conversation.contactEmail) { opts.push('Email'); }
       if (conversation.channels.includes('Facebook')) opts.push('Facebook');
@@ -101,7 +90,7 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
           try {
               const response = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
               const newBlob = await response.json();
-              setAttachments(prev => [...prev, { url: newBlob.url, name: file.name, type: file.type }]);
+              setAttachments(prev =>[...prev, { url: newBlob.url, name: file.name, type: file.type }]);
           } catch (error) { console.error("Upload failed", error); }
       }
       setIsUploading(false);
@@ -277,7 +266,7 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
         })}
       </div>
 
-      {/* INPUT DOCK (Floating) */}
+      {/* RULE 3: INPUT DOCK (Apple iMessage Style) */}
       <div className="p-4 bg-white shrink-0 z-20">
         <div className="max-w-4xl mx-auto relative">
             
@@ -296,35 +285,39 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
                 </div>
             )}
 
-            <div className="bg-[#F2F2F7] rounded-[24px] border border-transparent focus-within:bg-white focus-within:border-gray-200 focus-within:shadow-lg focus-within:shadow-gray-200/50 transition-all duration-200 p-1.5 flex items-end gap-2">
+            {/* THE DOCK */}
+            <div className="bg-[#F5F5F7] rounded-full border border-transparent focus-within:bg-white focus-within:border-gray-200 focus-within:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 p-1.5 flex items-center gap-2">
                 
                 <button 
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="p-2 text-gray-400 hover:text-[#007AFF] hover:bg-gray-200/50 rounded-full transition-colors border-none outline-none cursor-pointer shrink-0 mb-0.5"
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#007AFF] rounded-full transition-colors border-none outline-none cursor-pointer shrink-0"
                 >
-                    {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-[#007AFF]" /> : <Paperclip className="w-5 h-5" />}
+                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" /> : <Paperclip className="w-4 h-4" />}
                 </button>
                 
                 <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileSelect} />
 
-                <textarea 
+                {/* REPLACED TEXTAREA WITH INPUT TO REMOVE SCROLLBARS */}
+                <input 
+                    type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={`iMessage via ${activeChannel}`}
-                    className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#1D1D1F] placeholder-gray-400 resize-none max-h-32 py-2.5 px-1 min-h-[40px] focus:ring-0"
-                    style={{ height: '40px' }}
+                    placeholder={`Message via ${activeChannel}`}
+                    className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#1D1D1F] placeholder-gray-400 h-8 px-1"
                 />
 
-                <div className="flex items-center gap-2 mb-0.5">
-                    <div className="relative">
+                <div className="flex items-center gap-1">
+                    
+                    {/* CHANNEL SELECTOR (NO BORDERS, NO GREY BG) */}
+                    <div className="relative flex items-center justify-center">
                         <button 
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-wide select-none border border-gray-200 cursor-pointer transition-colors shadow-sm"
+                            className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors border-none outline-none cursor-pointer
+                                ${isMenuOpen ? 'bg-gray-200 text-[#1D1D1F]' : 'bg-transparent text-gray-400 hover:text-[#1D1D1F]'}`}
                         >
-                            <span className={getChannelColor(activeChannel)}>{getChannelIcon(activeChannel)}</span>
-                            {isMenuOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            {getChannelIcon(activeChannel)}
                         </button>
 
                         <AnimatePresence>
@@ -333,16 +326,19 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute bottom-full right-0 mb-2 w-40 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-[9999] p-1"
+                                    transition={{ duration: 0.15, ease: "easeOut" }}
+                                    className="absolute bottom-full right-0 mb-3 w-36 bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden z-[9999] p-1.5"
                                 >
                                     {availableOptions.map((opt) => (
                                         <button
                                             key={opt}
                                             onClick={() => { setActiveChannel(opt); setIsMenuOpen(false); }}
-                                            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors border-none outline-none cursor-pointer
-                                                ${activeChannel === opt ? 'bg-gray-100 text-[#1D1D1F]' : 'text-gray-500 hover:bg-gray-50'}`}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors border-none outline-none cursor-pointer
+                                                ${activeChannel === opt ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-transparent text-[#1D1D1F] hover:bg-gray-100'}`}
                                         >
-                                            <span className={getChannelColor(opt)}>{getChannelIcon(opt)}</span>
+                                            <span className="flex items-center justify-center w-4 h-4">
+                                                {getChannelIcon(opt)}
+                                            </span>
                                             {opt}
                                         </button>
                                     ))}
@@ -354,7 +350,7 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
                     <button 
                         onClick={handleSend}
                         disabled={(!input.trim() && attachments.length === 0) || sending}
-                        className="w-8 h-8 bg-[#007AFF] hover:bg-[#0062cc] text-white rounded-full flex items-center justify-center shadow-md transition-all disabled:opacity-50 disabled:shadow-none transform active:scale-95 border-none outline-none cursor-pointer"
+                        className="w-8 h-8 bg-[#007AFF] hover:bg-[#0055FF] text-white rounded-full flex items-center justify-center shadow-sm transition-all disabled:opacity-50 disabled:shadow-none transform active:scale-95 border-none outline-none cursor-pointer shrink-0"
                     >
                         <Send className="w-4 h-4 ml-0.5" />
                     </button>

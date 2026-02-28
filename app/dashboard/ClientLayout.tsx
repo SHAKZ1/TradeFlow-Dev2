@@ -6,6 +6,7 @@ import { Menu } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { LoadingScreen } from './components/LoadingScreen';
 import { BrandingProvider } from './BrandingContext'; // <--- IMPORT
+import { ToastProvider } from './components/ToastSystem';
 
 export default function ClientLayout({
   children,
@@ -44,25 +45,25 @@ export default function ClientLayout({
 
   
   return (
-    <BrandingProvider logoUrl={companyBanner}> {/* <--- WRAP HERE */}
-      <div className="min-h-screen bg-[#F9FAFB] flex">
-        <Sidebar 
-          isMobileOpen={isMobileOpen} 
-          setIsMobileOpen={setIsMobileOpen}
-          isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed}
-          companyLogo={companyLogo}
-          companyBanner={companyBanner}
-        />
+    <BrandingProvider logoUrl={companyBanner}>
+      <ToastProvider> {/* <--- ADD THIS */}
+        <div className="min-h-screen bg-[#F9FAFB] flex">
+          <Sidebar 
+            isMobileOpen={isMobileOpen} 
+            setIsMobileOpen={setIsMobileOpen}
+            isCollapsed={isCollapsed}
+            setIsCollapsed={setIsCollapsed}
+            companyLogo={companyLogo}
+            companyBanner={companyBanner}
+          />
 
-        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1.0)] ${isCollapsed ? 'md:pl-[80px]' : 'md:pl-[280px]'}`}>
-          {/* ... (Mobile Header) ... */}
-
-          <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-            {children}
-          </main>
+          <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1.0)] ${isCollapsed ? 'md:pl-[80px]' : 'md:pl-[280px]'}`}>
+            <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </ToastProvider> {/* <--- ADD THIS */}
     </BrandingProvider>
   );
 }

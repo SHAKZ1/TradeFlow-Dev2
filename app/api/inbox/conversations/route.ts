@@ -26,15 +26,20 @@ export async function GET(request: Request) {
     if (!response.ok) throw new Error(await response.text());
 
     const data = await response.json();
-    const rawConversations = data.conversations || [];
+    const rawConversations = data.conversations ||[];
 
-    const conversations: Conversation[] = rawConversations.map((c: any) => {
+    // --- RULE 1: STRICT FILTERING (NO EMPTY HISTORIES) ---
+    const validConversations = rawConversations.filter((c: any) => {
+        const hasDate = !!c.lastMessageDate;
+        const hasBody = c.lastMessageBody && c.lastMessageBody.trim() !== '';
+        return hasDate && (hasBody || c.unreadCount > 0);
+    });
+
+    const conversations: Conversation[] = validConversations.map((c: any) => {
         const contact = c.contact || {};
         
-        // --- FIX: MULTI-CHANNEL DETECTION ---
         const activeChannels: Set<Channel> = new Set();
         
-        // 1. Check Last Message
         const lastMsgType = (c.lastMessageType || '').toUpperCase();
         if (lastMsgType.includes('EMAIL')) activeChannels.add('Email');
         if (lastMsgType.includes('SMS')) activeChannels.add('SMS');
@@ -43,16 +48,13 @@ export async function GET(request: Request) {
         if (lastMsgType.includes('INSTAGRAM')) activeChannels.add('Instagram');
         if (lastMsgType.includes('GOOGLE')) activeChannels.add('Google');
 
-        // 2. Check Contact Info (If they have email, they are "Email-able")
         if (contact.email) activeChannels.add('Email');
         if (contact.phone) activeChannels.add('SMS');
 
-        // 3. Check Source
         const source = (contact.source || '').toLowerCase();
         if (source.includes('checkatrade')) activeChannels.add('Checkatrade');
         if (source.includes('trustatrader')) activeChannels.add('TrustATrader');
 
-        // Default to SMS if empty
         if (activeChannels.size === 0) activeChannels.add('SMS');
 
         const name = c.contactName || contact.firstName || 'Unknown Lead';
@@ -64,16 +66,16 @@ export async function GET(request: Request) {
             contactName: name,
             contactPhone: contact.phone,
             contactEmail: contact.email,
-            lastMessageBody: c.lastMessageBody || 'No message',
+            lastMessageBody: c.lastMessageBody || 'Attachment',
             lastMessageDate: new Date(c.lastMessageDate).toISOString(),
             unreadCount: c.unreadCount || 0,
-            channels: Array.from(activeChannels), // Convert Set to Array
-            tags: contact.tags || [],
+            channels: Array.from(activeChannels),
+            tags: contact.tags ||[],
             initials
         };
     });
 
-    // STRICT SORT: Newest First
+    // --- RULE 2: STRICT SORTING (NEWEST FIRST) ---
     conversations.sort((a, b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime());
 
     return NextResponse.json({ conversations });

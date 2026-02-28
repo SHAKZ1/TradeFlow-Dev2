@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { GHL_CONFIG } from '../../ghl/config';
 import { getAccessToken } from '@/lib/ghl';
 
 export async function PUT(request: Request) {
-  // 1. AUTHENTICATE
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // 2. GET LOCATION
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user || !user.ghlLocationId) return NextResponse.json({ error: 'No GHL Account Connected' }, { status: 400 });
   
@@ -17,10 +14,14 @@ export async function PUT(request: Request) {
   const token = await getAccessToken(locationId);
   if (!token) return NextResponse.json({ error: 'Unauthorized - Invalid Token' }, { status: 401 });
 
+  // --- USE DYNAMIC CONFIG ---
+  const CONFIG = user.ghlConfig as any;
+  if (!CONFIG) return NextResponse.json({ error: 'Config missing' }, { status: 400 });
+
   try {
     const { leadId, newStatus } = await request.json();
 
-    const stageId = GHL_CONFIG.stageIds[newStatus as keyof typeof GHL_CONFIG.stageIds];
+    const stageId = CONFIG.stageIds[newStatus];
     if (!stageId) return NextResponse.json({ error: 'Invalid Stage' }, { status: 400 });
 
     const status = newStatus === 'previous-jobs' ? 'won' : 'open';

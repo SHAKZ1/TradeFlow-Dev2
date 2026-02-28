@@ -7,7 +7,7 @@ import {
   User, ArrowRight, Pencil, Check, MapPin, Briefcase, Layout, ChevronDown, 
   Trash2, Send, AlertCircle, ShieldCheck, Award, Facebook, Megaphone, 
   PhoneIncoming, CreditCard, Receipt, FileText, MessageCircle,
-  PieChart, CheckCircle2, Plus, Calculator, History, Layers, Ban, Wallet, Tag, Settings
+  PieChart, CheckCircle2, Plus, Calculator, History, Layers, Ban, Wallet, Tag, Settings, Save, AlertTriangle
 } from 'lucide-react';
 import { Lead, LeadSource, InvoiceRecord, QuoteRecord, LeadStatus, STAGE_CONFIG } from './data';
 import { AlertModal } from './AlertModal';
@@ -1159,32 +1159,71 @@ export function Modal({ lead, isOpen, onClose, onSave, onDelete, onLost, hasTest
 
               return (
                   <>
-                      <AlertModal 
-                        isOpen={unsavedAlert}
-                        type="warning"
-                        title="Unsaved Changes"
-                        message="You have changed the contact details. We must save these changes before proceeding."
-                        confirmText="Save & Continue"
-                        confirmButtonColor={btnColor}
-                        onClose={() => {
-                            setUnsavedAlert(false);
-                            setPendingAction(null);
-                        }}
-                        onConfirm={() => {
-                            setUnsavedAlert(false);
-                            const success = handleSaveClick(false); 
-                            if (success) {
-                                setTimeout(() => {
-                                    if (pendingAction === 'quote') setIsQuoteModalOpen(true);
-                                    if (pendingAction === 'invoice') setIsInvoiceModalOpen(true);
-                                    if (pendingAction === 'sms') setIsTextModalOpen(true);
-                                    if (pendingAction === 'email') setIsEmailModalOpen(true);
-                                    setPendingAction(null);
-                                }, 300);
-                            }
-                        }}
-                      />
+                      {/* --- ACTION UNSAVED MODAL --- */}
+                      <AnimatePresence>
+                        {unsavedAlert && (
+                            <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-[11000] flex items-center justify-center p-4">
+                                <motion.div 
+                                    initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                                    animate={{ scale: 1, opacity: 1, y: 0 }} 
+                                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                                    transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+                                    className="bg-white w-full max-w-md rounded-[32px] shadow-2xl border border-white/40 overflow-hidden flex flex-col"
+                                >
+                                    <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-white">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 border border-amber-100 shadow-sm">
+                                                <AlertTriangle className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900 tracking-tight">Unsaved Changes</h3>
+                                                <p className="text-xs text-gray-500 font-medium mt-0.5">Action requires saving.</p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => { setUnsavedAlert(false); setPendingAction(null); }} 
+                                            className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors border-none outline-none cursor-pointer"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <div className="p-8 space-y-6 bg-[#F9FAFB]">
+                                        <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                                            You have modified the contact details. We must save these changes to the permanent record before proceeding with this action.
+                                        </p>
+                                    </div>
+                                    <div className="p-6 bg-white border-t border-gray-100 flex flex-col gap-3">
+                                        <button 
+                                            onClick={() => {
+                                                setUnsavedAlert(false);
+                                                const success = handleSaveClick(false); 
+                                                if (success) {
+                                                    setTimeout(() => {
+                                                        if (pendingAction === 'quote') setIsQuoteModalOpen(true);
+                                                        if (pendingAction === 'invoice') setIsInvoiceModalOpen(true);
+                                                        if (pendingAction === 'sms') setIsTextModalOpen(true);
+                                                        if (pendingAction === 'email') setIsEmailModalOpen(true);
+                                                        setPendingAction(null);
+                                                    }, 300);
+                                                }
+                                            }}
+                                            className={`w-full py-4 text-white rounded-2xl text-sm font-bold shadow-xl transition-all flex items-center justify-center gap-2 border-none outline-none cursor-pointer transform hover:-translate-y-0.5 ${btnColor}`}
+                                        >
+                                            <Save className="w-4 h-4" /> Save & Continue
+                                        </button>
+                                        <button 
+                                            onClick={() => { setUnsavedAlert(false); setPendingAction(null); }}
+                                            className="w-full py-3.5 text-xs font-bold text-gray-500 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors border-none outline-none cursor-pointer"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
+                      </AnimatePresence>
 
+                      {/* --- VALIDATION MODAL --- */}
                       <AlertModal 
                         isOpen={!!validationAlert}
                         type="warning"
@@ -1195,24 +1234,71 @@ export function Modal({ lead, isOpen, onClose, onSave, onDelete, onLost, hasTest
                         onClose={() => setValidationAlert(null)}
                       />
 
-                      <AlertModal 
-                        isOpen={isCloseConfirmOpen}
-                        type="warning"
-                        title="Unsaved Modifications"
-                        message="You have pending changes in this workspace. Would you like to commit these changes to the permanent record before exiting?"
-                        confirmText="Yes, Save Changes"
-                        cancelText="No, Discard"
-                        confirmButtonColor="bg-gray-900 hover:bg-black shadow-gray-200"
-                        onClose={() => setIsCloseConfirmOpen(false)}
-                        onConfirm={() => {
-                            setIsCloseConfirmOpen(false);
-                            handleSaveClick(true);
-                        }}
-                        onCancel={() => {
-                            setIsCloseConfirmOpen(false);
-                            onClose();
-                        }}
-                      />
+                      {/* --- CLOSE CONFIRM MODAL --- */}
+                      <AnimatePresence>
+                        {isCloseConfirmOpen && (
+                            <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-[11000] flex items-center justify-center p-4">
+                                <motion.div 
+                                    initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+                                    animate={{ scale: 1, opacity: 1, y: 0 }} 
+                                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                                    transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+                                    className="bg-white w-full max-w-md rounded-[32px] shadow-2xl border border-white/40 overflow-hidden flex flex-col"
+                                >
+                                    <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-white">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 border border-amber-100 shadow-sm">
+                                                <AlertTriangle className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900 tracking-tight">Unsaved Changes</h3>
+                                                <p className="text-xs text-gray-500 font-medium mt-0.5">You have pending modifications.</p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => setIsCloseConfirmOpen(false)} 
+                                            className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors border-none outline-none cursor-pointer"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <div className="p-8 space-y-6 bg-[#F9FAFB]">
+                                        <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                                            You are about to close this job sheet, but you have unsaved changes. Would you like to commit these changes to the permanent record before exiting?
+                                        </p>
+                                    </div>
+                                    <div className="p-6 bg-white border-t border-gray-100 flex flex-col gap-3">
+                                        <button 
+                                            onClick={() => {
+                                                setIsCloseConfirmOpen(false);
+                                                handleSaveClick(true);
+                                            }}
+                                            className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl text-sm font-bold shadow-xl shadow-gray-200 transition-all flex items-center justify-center gap-2 border-none outline-none cursor-pointer transform hover:-translate-y-0.5"
+                                        >
+                                            <Save className="w-4 h-4" /> Save & Close
+                                        </button>
+                                        <div className="flex gap-3">
+                                            <button 
+                                                onClick={() => setIsCloseConfirmOpen(false)}
+                                                className="flex-1 py-3.5 text-xs font-bold text-gray-500 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors border-none outline-none cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    setIsCloseConfirmOpen(false);
+                                                    onClose();
+                                                }}
+                                                className="flex-1 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border-none outline-none cursor-pointer"
+                                            >
+                                                <Trash2 className="w-4 h-4" /> Discard
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
+                      </AnimatePresence>
 
                       <AlertModal 
                         isOpen={isDeleteAlertOpen}
