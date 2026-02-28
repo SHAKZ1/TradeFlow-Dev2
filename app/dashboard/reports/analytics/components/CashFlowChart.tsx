@@ -4,105 +4,57 @@ import { ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveCo
 import { Wallet, TrendingUp, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { useState } from 'react';
 
-const formatCurrency = (value: number) => 
-  new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(value);
+const formatCurrency = (value: number) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(value);
 
-const getAiInsight = (cash: number, work: number) => {
+const getAiInsight = (cash: number, work: number, avgDaysToPay: number) => {
     const diff = cash - work;
-    const ratio = work > 0 ? cash / work : 0;
+    if (work === 0 && cash > 0) return { status: 'Pre-Funding', message: "Excellent. You have secured deposits before work has commenced.", color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle2 };
+    if (diff >= 0) return { status: 'Cash Surplus', message: "Healthy flow. You are collecting payments faster than you are booking work.", color: 'text-emerald-600', bg: 'bg-emerald-50', icon: TrendingUp };
+    
+    // Smart Logic: If the gap is huge, but they usually get paid in 30 days, it might be normal.
+    if (avgDaysToPay > 14 && Math.abs(diff) > (work * 0.5)) {
+        return { status: 'Standard Lag', message: `You have ${formatCurrency(Math.abs(diff))} uncollected, but this aligns with your ${avgDaysToPay}-day average payment cycle.`, color: 'text-blue-600', bg: 'bg-blue-50', icon: Info };
+    } else if (Math.abs(diff) > (work * 0.5)) {
+        return { status: 'Collection Alert', message: `Critical lag. Over 50% of booked work is unpaid. Chase invoices immediately.`, color: 'text-rose-600', bg: 'bg-rose-50', icon: AlertCircle };
+    }
 
-    if (work === 0 && cash > 0) return {
-        status: 'Pre-Funding',
-        message: "Excellent. You have secured deposits before work has commenced. Liquidity is high.",
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50',
-        icon: CheckCircle2
-    };
-
-    if (diff >= 0) return {
-        status: 'Cash Surplus',
-        message: "Healthy flow. You are collecting payments faster than you are burning work hours.",
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50',
-        icon: TrendingUp
-    };
-
-    if (ratio < 0.5) return {
-        status: 'Collection Alert',
-        message: "Critical lag. Over 50% of your booked work is unpaid. Chase invoices immediately.",
-        color: 'text-rose-600',
-        bg: 'bg-rose-50',
-        icon: AlertCircle
-    };
-
-    return {
-        status: 'Uncollected Value',
-        message: `You have ${formatCurrency(Math.abs(diff))} of work booked/done that hasn't hit the bank yet.`,
-        color: 'text-amber-600',
-        bg: 'bg-amber-50',
-        icon: Info
-    };
+    return { status: 'Uncollected Value', message: `You have ${formatCurrency(Math.abs(diff))} of work booked that hasn't hit the bank yet.`, color: 'text-amber-600', bg: 'bg-amber-50', icon: Info };
 };
 
-export default function CashFlowChart({ data }: { data: any[] }) {
+export default function CashFlowChart({ data }: { data: any }) {
   const [showTooltip, setShowTooltip] = useState(false);
+  if (!data || !data.series || data.series.length === 0) return null;
 
-  if (!data || data.length === 0) return null;
-
-  const lastPoint = data[data.length - 1];
-  const revenue = lastPoint.revenue; // Work Booked
-  const cash = lastPoint.cash;       // Cash Banked
-  
+  const lastPoint = data.series[data.series.length - 1];
+  const revenue = lastPoint.revenue; 
+  const cash = lastPoint.cash;       
   const netPosition = cash - revenue; 
   const isSurplus = netPosition >= 0;
-
-  const insight = getAiInsight(cash, revenue);
+  const insight = getAiInsight(cash, revenue, data.avgDaysToPay);
   const InsightIcon = insight.icon;
 
   return (
     <div className="flex flex-col w-full bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 relative overflow-visible">
-        
-        {/* HEADER */}
         <div className="flex justify-between items-start mb-4 relative z-10">
             <div>
                 <div className="flex items-center gap-2 mb-1">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
-                        <Wallet className="w-4 h-4 text-emerald-600" />
-                    </div>
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center"><Wallet className="w-4 h-4 text-emerald-600" /></div>
                     <h3 className="text-sm font-bold text-gray-900 tracking-tight">Cash Flow Chronometer</h3>
-                    
-                    <div 
-                        className="relative flex items-center justify-center"
-                        onMouseEnter={() => setShowTooltip(true)}
-                        onMouseLeave={() => setShowTooltip(false)}
-                    >
+                    <div className="relative flex items-center justify-center" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
                         <Info className="w-3.5 h-3.5 text-gray-400 hover:text-indigo-500 transition-colors cursor-help" />
-                        {showTooltip && (
-                            <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 text-white text-[11px] font-medium leading-relaxed p-3 rounded-xl shadow-xl z-50">
-                                Compares <strong>Work Booked</strong> (Blue) vs <strong>Cash Collected</strong> (Green). A positive gap means you are funded upfront.
-                            </div>
-                        )}
+                        {showTooltip && <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 text-white text-[11px] font-medium leading-relaxed p-3 rounded-xl shadow-xl z-50">Compares <strong>Work Booked</strong> (Blue) vs <strong>Cash Collected</strong> (Green).</div>}
                     </div>
                 </div>
-                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest pl-1">
-                    Realized vs. Unrealized
-                </p>
+                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest pl-1">Realized vs. Unrealized</p>
             </div>
-            
-            {/* KPI BADGE */}
             <div className="text-right">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
-                    {isSurplus ? 'Cash Surplus' : 'Uncollected Value'}
-                </p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{isSurplus ? 'Cash Surplus' : 'Uncollected Value'}</p>
                 <div className={`flex items-center justify-end gap-2 ${isSurplus ? 'text-emerald-600' : 'text-amber-600'}`}>
-                    <span className="text-xl font-bold tabular-nums tracking-tight">
-                        {isSurplus ? '+' : ''}{formatCurrency(Math.abs(netPosition))}
-                    </span>
+                    <span className="text-xl font-bold tabular-nums tracking-tight">{isSurplus ? '+' : ''}{formatCurrency(Math.abs(netPosition))}</span>
                 </div>
             </div>
         </div>
 
-        {/* AI INSIGHT BANNER */}
         <div className={`mb-6 px-3 py-2 rounded-lg border flex items-start gap-3 ${insight.bg} ${insight.color.replace('text-', 'border-').replace('600', '200')}`}>
             <InsightIcon className={`w-4 h-4 mt-0.5 shrink-0 ${insight.color}`} />
             <div>
@@ -111,77 +63,21 @@ export default function CashFlowChart({ data }: { data: any[] }) {
             </div>
         </div>
 
-        {/* CHART - FIXED HEIGHT TO PREVENT BLEED */}
         <div className="w-full h-[250px] relative z-0">
             <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <ComposedChart data={data.series} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
-                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
-                            <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                        </linearGradient>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                        <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/><stop offset="95%" stopColor="#10B981" stopOpacity={0}/></linearGradient>
                     </defs>
-                    
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                    
-                    <XAxis 
-                        dataKey="date" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }} 
-                        minTickGap={30}
-                    />
-                    <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }} 
-                        tickFormatter={(val) => `£${val/1000}k`}
-                    />
-                    
-                    <Tooltip 
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.1)' }}
-                        itemStyle={{ fontSize: '11px', fontWeight: 600 }}
-                        formatter={(value: any) => formatCurrency(value)}
-                    />
-
-                    <Area 
-                        type="monotone" 
-                        dataKey="revenue" 
-                        name="Work Booked"
-                        stroke="#6366f1" 
-                        strokeWidth={2}
-                        strokeDasharray="4 4"
-                        fill="url(#colorRevenue)" 
-                    />
-
-                    <Area 
-                        type="monotone" 
-                        dataKey="cash" 
-                        name="Cash Banked"
-                        stroke="#10B981" 
-                        strokeWidth={3} 
-                        fill="url(#colorCash)" 
-                    />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }} minTickGap={30} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }} tickFormatter={(val) => `£${val/1000}k`} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.1)' }} itemStyle={{ fontSize: '11px', fontWeight: 600 }} formatter={(value: any) => formatCurrency(value)} />
+                    <Area type="monotone" dataKey="revenue" name="Work Booked" stroke="#6366f1" strokeWidth={2} strokeDasharray="4 4" fill="url(#colorRevenue)" />
+                    <Area type="monotone" dataKey="cash" name="Cash Banked" stroke="#10B981" strokeWidth={3} fill="url(#colorCash)" />
                 </ComposedChart>
             </ResponsiveContainer>
-        </div>
-
-        {/* FOOTER */}
-        <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center relative z-10">
-            <div className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Work Booked</span>
-                <span className="text-xs font-bold text-gray-900">{formatCurrency(revenue)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Cash Banked</span>
-                <span className="text-xs font-bold text-gray-900">{formatCurrency(cash)}</span>
-            </div>
         </div>
     </div>
   );

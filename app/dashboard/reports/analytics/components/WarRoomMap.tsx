@@ -182,21 +182,18 @@ export default function WarRoomMap({ data, isTheaterMode, toggleTheaterMode }: W
             <style jsx global>{`
                 .neon-beacon {
                     border-radius: 50%;
-                    border: 2px solid white;
                     transition: all 0.3s ease;
                     cursor: pointer;
+                    mix-blend-mode: multiply; /* THIS CREATES THE HEAT OVERLAP */
                 }
                 .beacon-low {
-                    background-color: #4F46E5;
-                    box-shadow: 0 0 10px rgba(79, 70, 229, 0.5), 0 0 20px rgba(79, 70, 229, 0.3);
+                    background: radial-gradient(circle, rgba(79, 70, 229, 0.8) 0%, rgba(79, 70, 229, 0) 70%);
                 }
                 .beacon-med {
-                    background-color: #F59E0B;
-                    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5), 0 0 20px rgba(245, 158, 11, 0.3);
+                    background: radial-gradient(circle, rgba(245, 158, 11, 0.8) 0%, rgba(245, 158, 11, 0) 70%);
                 }
                 .beacon-high {
-                    background-color: #F43F5E;
-                    box-shadow: 0 0 10px rgba(244, 63, 94, 0.5), 0 0 20px rgba(244, 63, 94, 0.3);
+                    background: radial-gradient(circle, rgba(244, 63, 94, 0.9) 0%, rgba(244, 63, 94, 0) 70%);
                 }
                 
                 .leaflet-tooltip.elite-tooltip-light {

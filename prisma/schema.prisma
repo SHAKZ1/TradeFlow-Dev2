@@ -61,6 +61,7 @@ model User {
   jobExpenses JobExpense[]
   aiAdvisorReports AiAdvisorReport[] // <--- ADD THIS LINE
   bookings    Booking[] // <--- ADD THIS LINE
+  leads            Lead[]            // <--- ADD THIS LINE
 }
 
 model Quote {
@@ -149,4 +150,57 @@ model AiAdvisorReport {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId])
+}
+
+// --- THE IRONCLAD LEAD VAULT ---
+model Lead {
+  id                  String    @id // GHL Opportunity ID
+  userId              String
+  contactId           String?
+  
+  // Identity
+  firstName           String    @default("")
+  lastName            String    @default("")
+  email               String    @default("")
+  phone               String    @default("")
+  
+  // Core Job Data
+  value               Float     @default(0)
+  status              String    @default("new-lead")
+  postcode            String    @default("")
+  service             String    @default("")
+  source              String    @default("Manual")
+  
+  // Financial Status
+  depositStatus       String    @default("unpaid")
+  invoiceStatus       String    @default("unpaid")
+  
+  // Automation Flags
+  autoTexted          Boolean   @default(false)
+  
+  // Reputation
+  reviewStatus        String    @default("none")
+  reviewChannel       String?
+  reviewScheduledDate DateTime?
+  reviewRating        String?
+  reviewSource        String?
+  reviewText          String?
+  
+  // Scheduling & Details
+  jobDate             DateTime?
+  jobEndDate          DateTime?
+  notes               String?
+  jobSpecs            Json?
+  
+  // Timestamps
+  createdAt           DateTime  @default(now()) // Will map to GHL's original creation date
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance Indexes for lightning-fast dashboard loads
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
